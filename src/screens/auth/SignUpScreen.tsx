@@ -2,11 +2,12 @@ import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, TextInput,
   TouchableOpacity, ScrollView, KeyboardAvoidingView,
-  Platform, Linking, Modal,
+  Platform, Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../context/AuthContext';
 import { useTeam } from '../../context/TeamContext';
+import { useMemberProfiles } from '../../context/MemberProfileContext';
 
 const BG = '#F5F7FA';
 const SURFACE = '#FFFFFF';
@@ -14,9 +15,6 @@ const BORDER = '#E2E6EA';
 const TEXT = '#1A1A2E';
 const TEXT2 = '#888899';
 const ACCENT = '#1A3C5E';
-
-// 実際のGoogleフォームURLに差し替えてください
-const GOOGLE_FORM_URL = 'https://docs.google.com/forms/d/e/YOUR_FORM_ID/viewform';
 
 interface Props {
   onBack: () => void;
@@ -50,11 +48,12 @@ function TermsModal({ visible, onClose }: { visible: boolean; onClose: () => voi
           <Text style={terms.article}>第2条（収集する個人情報）</Text>
           <Text style={terms.body}>
             本サービスは、以下の個人情報を収集します。{'\n'}
-            (1) 氏名{'\n'}
-            (2) メールアドレス{'\n'}
-            (3) 所属グループ・学年{'\n'}
-            (4) 月謝支払いに関する情報（支払い結果・対象月・金額）{'\n'}
-            (5) アプリの利用ログ（操作日時・画面遷移等）{'\n\n'}
+            (1) 氏名・フリガナ{'\n'}
+            (2) 生年月日{'\n'}
+            (3) メールアドレス{'\n'}
+            (4) 所属グループ・期生{'\n'}
+            (5) 月謝支払いに関する情報（支払い結果・対象月・金額）{'\n'}
+            (6) アプリの利用ログ（操作日時・画面遷移等）{'\n\n'}
             なお、クレジットカード番号等の決済情報は本サービス内に保存せず、決済代行業者が管理します。
           </Text>
 
@@ -152,7 +151,12 @@ function TermsModal({ visible, onClose }: { visible: boolean; onClose: () => voi
 export default function SignUpScreen({ onBack }: Props) {
   const { signUp } = useAuth();
   const { settings } = useTeam();
+  const { addProfile } = useMemberProfiles();
+
   const [name, setName] = useState('');
+  const [furigana, setFurigana] = useState('');
+  const [birthDate, setBirthDate] = useState('');
+  const [cohort, setCohort] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -162,10 +166,15 @@ export default function SignUpScreen({ onBack }: Props) {
 
   const EMAIL_REGEX = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/;
   const PASSWORD_REGEX = /^(?=.*[A-Za-z])(?=.*\d).{8,}$/;
+  const BIRTHDATE_REGEX = /^\d{4}\/\d{2}\/\d{2}$/;
 
   const handleSignUp = () => {
     setError('');
     if (!name.trim()) { setError('お名前を入力してください'); return; }
+    if (!furigana.trim()) { setError('フリガナを入力してください'); return; }
+    if (!birthDate.trim()) { setError('生年月日を入力してください'); return; }
+    if (!BIRTHDATE_REGEX.test(birthDate.trim())) { setError('生年月日は YYYY/MM/DD 形式で入力してください'); return; }
+    if (!cohort.trim()) { setError('期生を入力してください'); return; }
     if (!EMAIL_REGEX.test(email.trim())) { setError('正しいメールアドレスを入力してください'); return; }
     if (!PASSWORD_REGEX.test(password)) {
       setError('パスワードは8文字以上で、英字と数字を両方含めてください');
@@ -173,6 +182,14 @@ export default function SignUpScreen({ onBack }: Props) {
     }
     if (password !== confirm) { setError('パスワードが一致しません'); return; }
     if (!agreed) { setError('利用規約への同意が必要です'); return; }
+
+    addProfile({
+      name: name.trim(),
+      furigana: furigana.trim(),
+      birthDate: birthDate.trim(),
+      cohort: cohort.trim(),
+      email: email.trim().toLowerCase(),
+    });
     signUp(name.trim(), email.trim().toLowerCase());
   };
 
@@ -189,25 +206,34 @@ export default function SignUpScreen({ onBack }: Props) {
 
         <ScrollView contentContainerStyle={styles.content}>
 
-          {/* Googleフォーム案内バナー */}
-          <TouchableOpacity
-            style={[styles.formBanner, { borderColor: settings.primaryColor + '50' }]}
-            onPress={() => Linking.openURL(GOOGLE_FORM_URL)}
-          >
-            <View style={styles.formBannerLeft}>
-              <Text style={[styles.formBannerSym, { color: settings.primaryColor }]}>□</Text>
-              <View>
-                <Text style={styles.formBannerTitle}>入会申込フォームを記入する</Text>
-                <Text style={styles.formBannerSub}>登録前にGoogleフォームの記入をお願いします</Text>
-              </View>
-            </View>
-            <Text style={[styles.formBannerArrow, { color: settings.primaryColor }]}>›</Text>
-          </TouchableOpacity>
+          <View style={[styles.sectionHeader, { borderLeftColor: settings.primaryColor }]}>
+            <Text style={styles.sectionTitle}>入会者情報</Text>
+          </View>
 
           <Text style={styles.label}>お名前</Text>
           <TextInput style={styles.input} value={name}
             onChangeText={v => { setName(v); setError(''); }}
             placeholder="例: 山田 太郎" placeholderTextColor={TEXT2} />
+
+          <Text style={styles.label}>フリガナ</Text>
+          <TextInput style={styles.input} value={furigana}
+            onChangeText={v => { setFurigana(v); setError(''); }}
+            placeholder="例: ヤマダ タロウ" placeholderTextColor={TEXT2} />
+
+          <Text style={styles.label}>生年月日</Text>
+          <TextInput style={styles.input} value={birthDate}
+            onChangeText={v => { setBirthDate(v); setError(''); }}
+            placeholder="例: 2010/04/01" placeholderTextColor={TEXT2}
+            keyboardType="numbers-and-punctuation" />
+
+          <Text style={styles.label}>期生</Text>
+          <TextInput style={styles.input} value={cohort}
+            onChangeText={v => { setCohort(v); setError(''); }}
+            placeholder="例: 1期生" placeholderTextColor={TEXT2} />
+
+          <View style={[styles.sectionHeader, { borderLeftColor: settings.primaryColor, marginTop: 20 }]}>
+            <Text style={styles.sectionTitle}>アカウント情報</Text>
+          </View>
 
           <Text style={styles.label}>メールアドレス</Text>
           <TextInput style={styles.input} value={email}
@@ -289,17 +315,10 @@ const styles = StyleSheet.create({
   backText: { color: TEXT2, fontSize: 13, letterSpacing: 0.5 },
   headerTitle: { color: TEXT, fontSize: 16, fontWeight: '700', letterSpacing: 2 },
   content: { padding: 24, gap: 6 },
-  formBanner: {
-    backgroundColor: SURFACE, borderRadius: 4, padding: 16,
-    borderWidth: 1, borderColor: ACCENT + '50',
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    marginBottom: 8,
+  sectionHeader: {
+    borderLeftWidth: 3, paddingLeft: 10, marginBottom: 4,
   },
-  formBannerLeft: { flexDirection: 'row', alignItems: 'center', gap: 14, flex: 1 },
-  formBannerSym: { fontSize: 20, color: ACCENT, fontWeight: '700' },
-  formBannerTitle: { fontSize: 14, fontWeight: '700', color: TEXT },
-  formBannerSub: { fontSize: 12, color: TEXT2, marginTop: 3 },
-  formBannerArrow: { fontSize: 22, color: ACCENT, fontWeight: '700' },
+  sectionTitle: { fontSize: 13, fontWeight: '700', color: TEXT, letterSpacing: 1 },
   label: { fontSize: 10, color: TEXT2, fontWeight: '700', marginTop: 14, letterSpacing: 2 },
   input: {
     backgroundColor: SURFACE, borderRadius: 4, borderWidth: 1,

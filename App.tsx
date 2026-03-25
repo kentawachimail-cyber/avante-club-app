@@ -2,12 +2,13 @@ import React, { useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from 'react-native';
 
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { DocumentProvider } from './src/context/DocumentContext';
 import { TeamProvider, useTeam } from './src/context/TeamContext';
+import { MemberProfileProvider } from './src/context/MemberProfileContext';
 import LoginScreen from './src/screens/auth/LoginScreen';
 import SignUpScreen from './src/screens/auth/SignUpScreen';
 import PaymentSetupScreen from './src/screens/auth/PaymentSetupScreen';
@@ -37,7 +38,7 @@ const TAB_ICONS: Record<string, string> = {
   設定: '⚙',
 };
 
-function makeTabOptions(primaryColor: string) {
+function makeTabOptions(primaryColor: string, bottomInset: number) {
   return ({ route }: { route: { name: string } }) => ({
     headerShown: false,
     tabBarActiveTintColor: primaryColor,
@@ -46,8 +47,8 @@ function makeTabOptions(primaryColor: string) {
       backgroundColor: '#FFFFFF',
       borderTopColor: '#E2E6EA',
       borderTopWidth: 1,
-      height: 64,
-      paddingBottom: 10,
+      height: 64 + bottomInset,
+      paddingBottom: 10 + bottomInset,
       paddingTop: 8,
     },
     tabBarLabelStyle: { fontSize: 10, letterSpacing: 0.3 },
@@ -62,8 +63,9 @@ function makeTabOptions(primaryColor: string) {
 // 会員タブ
 function MemberTabs() {
   const { settings } = useTeam();
+  const { bottom } = useSafeAreaInsets();
   return (
-    <Tab.Navigator screenOptions={makeTabOptions(settings.primaryColor)}>
+    <Tab.Navigator screenOptions={makeTabOptions(settings.primaryColor, bottom)}>
       <Tab.Screen name="ホーム" component={HomeScreen} />
       <Tab.Screen name="スケジュール" component={ScheduleScreen} />
       <Tab.Screen name="月謝" component={PaymentScreen} />
@@ -76,8 +78,9 @@ function MemberTabs() {
 // 指導者タブ
 function CoachTabs() {
   const { settings } = useTeam();
+  const { bottom } = useSafeAreaInsets();
   return (
-    <Tab.Navigator screenOptions={makeTabOptions(settings.primaryColor)}>
+    <Tab.Navigator screenOptions={makeTabOptions(settings.primaryColor, bottom)}>
       <Tab.Screen name="ホーム" component={HomeScreen} />
       <Tab.Screen name="スケジュール" component={AdminScheduleScreen} />
       <Tab.Screen name="経費精算" component={ExpenseScreen} />
@@ -89,8 +92,9 @@ function CoachTabs() {
 // 管理者タブ
 function ManagerTabs() {
   const { settings } = useTeam();
+  const { bottom } = useSafeAreaInsets();
   return (
-    <Tab.Navigator screenOptions={makeTabOptions(settings.primaryColor)}>
+    <Tab.Navigator screenOptions={makeTabOptions(settings.primaryColor, bottom)}>
       <Tab.Screen name="ホーム" component={HomeScreen} />
       <Tab.Screen name="経費精算" component={ExpenseScreen} />
       <Tab.Screen name="管理シート" component={ManagerSheetsScreen} />
@@ -129,14 +133,16 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <TeamProvider>
-        <AuthProvider>
-          <DocumentProvider>
-            <NavigationContainer>
-              <StatusBar style="light" />
-              <AppNavigator />
-            </NavigationContainer>
-          </DocumentProvider>
-        </AuthProvider>
+        <MemberProfileProvider>
+          <AuthProvider>
+            <DocumentProvider>
+              <NavigationContainer>
+                <StatusBar style="light" />
+                <AppNavigator />
+              </NavigationContainer>
+            </DocumentProvider>
+          </AuthProvider>
+        </MemberProfileProvider>
       </TeamProvider>
     </SafeAreaProvider>
   );
