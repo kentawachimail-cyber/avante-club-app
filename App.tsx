@@ -47,11 +47,10 @@ function makeTabOptions(primaryColor: string) {
       backgroundColor: '#FFFFFF',
       borderTopColor: '#E2E6EA',
       borderTopWidth: 1,
-      height: 80,
-      paddingTop: 8,
-      paddingBottom: 16,
+      paddingTop: 10,
+      paddingBottom: 24,
     },
-    tabBarLabelStyle: { fontSize: 10, letterSpacing: 0.3 },
+    tabBarLabelStyle: { fontSize: 10, letterSpacing: 0.3, marginBottom: 2 },
     tabBarIcon: ({ focused }: { focused: boolean }) => (
       <Text style={{ fontSize: 16, color: focused ? primaryColor : '#AAAABB', fontWeight: '700' }}>
         {TAB_ICONS[route.name] ?? '·'}
