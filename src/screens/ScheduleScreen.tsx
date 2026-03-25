@@ -6,7 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import { useTeam } from '../context/TeamContext';
-import { useSchedule, AttendanceStatus } from '../context/ScheduleContext';
+import { useSchedule, AttendanceStatus, AttendanceResponse } from '../context/ScheduleContext';
 
 const BG = '#F5F7FA';
 const SURFACE = '#FFFFFF';
@@ -16,6 +16,31 @@ const TEXT2 = '#888899';
 const GREEN = '#28A745';
 const RED = '#DC3545';
 const YELLOW = '#FFC107';
+
+const STATUS_COLOR: Record<string, string> = {
+  present: GREEN,
+  absent: RED,
+  maybe: YELLOW,
+};
+
+function UserBadge({ response }: { response: AttendanceResponse }) {
+  const color = STATUS_COLOR[response.status] ?? '#aaa';
+  return (
+    <View style={badgeStyles.wrap}>
+      <View style={[badgeStyles.circle, { backgroundColor: color }]}>
+        <Text style={badgeStyles.char}>{response.userName[0] ?? '?'}</Text>
+      </View>
+      <Text style={badgeStyles.name} numberOfLines={1}>{response.userName}</Text>
+    </View>
+  );
+}
+
+const badgeStyles = StyleSheet.create({
+  wrap: { alignItems: 'center', width: 44 },
+  circle: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  char: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  name: { fontSize: 9, color: TEXT2, marginTop: 3, textAlign: 'center' },
+});
 
 type Attendance = AttendanceStatus | null;
 
@@ -163,6 +188,10 @@ export default function ScheduleScreen() {
         ) : (
           filtered.map(item => {
             const attendance = getMyAttendance(item.id);
+            const allResponses = getAttendanceForSchedule(item.id);
+            const presentList = allResponses.filter(r => r.status === 'present');
+            const absentList  = allResponses.filter(r => r.status === 'absent');
+            const maybeList   = allResponses.filter(r => r.status === 'maybe');
             const { entries, assignments } = getCarpoolForSchedule(item.id);
             const myEntry = entries.find(e => e.userEmail === email);
             const posts = getCarpoolPostsForSchedule(item.id);
@@ -209,6 +238,56 @@ export default function ScheduleScreen() {
                   <TouchableOpacity onPress={() => handleAttendance(item.id, null)}>
                     <Text style={styles.changeLink}>回答を変更する</Text>
                   </TouchableOpacity>
+                )}
+
+                {/* 出欠詳細（全員分のバッジ） */}
+                {allResponses.length > 0 && (
+                  <View style={styles.attendanceDetail}>
+                    <View style={styles.attendanceCountRow}>
+                      <View style={[styles.countBox, { backgroundColor: '#E8F5E9' }]}>
+                        <Text style={[styles.countNum, { color: GREEN }]}>{presentList.length}</Text>
+                        <Text style={styles.countLabel}>参加</Text>
+                      </View>
+                      <View style={[styles.countBox, { backgroundColor: '#FFEBEE' }]}>
+                        <Text style={[styles.countNum, { color: RED }]}>{absentList.length}</Text>
+                        <Text style={styles.countLabel}>欠席</Text>
+                      </View>
+                      <View style={[styles.countBox, { backgroundColor: '#FFF8E1' }]}>
+                        <Text style={[styles.countNum, { color: YELLOW }]}>{maybeList.length}</Text>
+                        <Text style={styles.countLabel}>未定</Text>
+                      </View>
+                    </View>
+                    {presentList.length > 0 && (
+                      <View style={styles.badgeRow}>
+                        <View style={[styles.badgeLabel, { backgroundColor: '#E8F5E9' }]}>
+                          <Text style={[styles.badgeLabelText, { color: GREEN }]}>参加</Text>
+                        </View>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.badgeList}>
+                          {presentList.map(r => <UserBadge key={r.userEmail} response={r} />)}
+                        </ScrollView>
+                      </View>
+                    )}
+                    {absentList.length > 0 && (
+                      <View style={styles.badgeRow}>
+                        <View style={[styles.badgeLabel, { backgroundColor: '#FFEBEE' }]}>
+                          <Text style={[styles.badgeLabelText, { color: RED }]}>欠席</Text>
+                        </View>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.badgeList}>
+                          {absentList.map(r => <UserBadge key={r.userEmail} response={r} />)}
+                        </ScrollView>
+                      </View>
+                    )}
+                    {maybeList.length > 0 && (
+                      <View style={styles.badgeRow}>
+                        <View style={[styles.badgeLabel, { backgroundColor: '#FFF8E1' }]}>
+                          <Text style={[styles.badgeLabelText, { color: YELLOW }]}>未定</Text>
+                        </View>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.badgeList}>
+                          {maybeList.map(r => <UserBadge key={r.userEmail} response={r} />)}
+                        </ScrollView>
+                      </View>
+                    )}
+                  </View>
                 )}
 
                 {/* Transport section — only when attending */}
@@ -421,6 +500,18 @@ const styles = StyleSheet.create({
   btn: { flex: 1, paddingVertical: 10, borderRadius: 4, alignItems: 'center' },
   btnText: { color: '#fff', fontWeight: '700', fontSize: 13, letterSpacing: 0.5 },
   changeLink: { color: TEXT2, fontSize: 12, marginTop: 12, letterSpacing: 0.5 },
+  attendanceDetail: {
+    marginTop: 14, paddingTop: 14,
+    borderTopWidth: 1, borderTopColor: BORDER, gap: 10,
+  },
+  attendanceCountRow: { flexDirection: 'row', gap: 8 },
+  countBox: { flex: 1, borderRadius: 6, padding: 8, alignItems: 'center' },
+  countNum: { fontSize: 20, fontWeight: '800' },
+  countLabel: { fontSize: 10, color: TEXT2, marginTop: 2, letterSpacing: 0.5 },
+  badgeRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  badgeLabel: { borderRadius: 4, paddingHorizontal: 8, paddingVertical: 4, minWidth: 38, alignItems: 'center' },
+  badgeLabelText: { fontSize: 11, fontWeight: '700' },
+  badgeList: { flexDirection: 'row', gap: 8, paddingVertical: 2 },
 
   // Transport section
   transportSection: {
