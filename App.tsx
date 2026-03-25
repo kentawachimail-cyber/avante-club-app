@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Text } from 'react-native';
 
 import { AuthProvider, useAuth } from './src/context/AuthContext';
@@ -38,7 +38,7 @@ const TAB_ICONS: Record<string, string> = {
   設定: '⚙',
 };
 
-function makeTabOptions(primaryColor: string, bottomInset: number) {
+function makeTabOptions(primaryColor: string) {
   return ({ route }: { route: { name: string } }) => ({
     headerShown: false,
     tabBarActiveTintColor: primaryColor,
@@ -47,8 +47,6 @@ function makeTabOptions(primaryColor: string, bottomInset: number) {
       backgroundColor: '#FFFFFF',
       borderTopColor: '#E2E6EA',
       borderTopWidth: 1,
-      height: 64 + bottomInset,
-      paddingBottom: 10 + bottomInset,
       paddingTop: 8,
     },
     tabBarLabelStyle: { fontSize: 10, letterSpacing: 0.3 },
@@ -63,9 +61,8 @@ function makeTabOptions(primaryColor: string, bottomInset: number) {
 // 会員タブ
 function MemberTabs() {
   const { settings } = useTeam();
-  const { bottom } = useSafeAreaInsets();
   return (
-    <Tab.Navigator screenOptions={makeTabOptions(settings.primaryColor, bottom)}>
+    <Tab.Navigator screenOptions={makeTabOptions(settings.primaryColor)}>
       <Tab.Screen name="ホーム" component={HomeScreen} />
       <Tab.Screen name="スケジュール" component={ScheduleScreen} />
       <Tab.Screen name="月謝" component={PaymentScreen} />
@@ -78,9 +75,8 @@ function MemberTabs() {
 // 指導者タブ
 function CoachTabs() {
   const { settings } = useTeam();
-  const { bottom } = useSafeAreaInsets();
   return (
-    <Tab.Navigator screenOptions={makeTabOptions(settings.primaryColor, bottom)}>
+    <Tab.Navigator screenOptions={makeTabOptions(settings.primaryColor)}>
       <Tab.Screen name="ホーム" component={HomeScreen} />
       <Tab.Screen name="スケジュール" component={AdminScheduleScreen} />
       <Tab.Screen name="経費精算" component={ExpenseScreen} />
@@ -92,9 +88,8 @@ function CoachTabs() {
 // 管理者タブ
 function ManagerTabs() {
   const { settings } = useTeam();
-  const { bottom } = useSafeAreaInsets();
   return (
-    <Tab.Navigator screenOptions={makeTabOptions(settings.primaryColor, bottom)}>
+    <Tab.Navigator screenOptions={makeTabOptions(settings.primaryColor)}>
       <Tab.Screen name="ホーム" component={HomeScreen} />
       <Tab.Screen name="経費精算" component={ExpenseScreen} />
       <Tab.Screen name="管理シート" component={ManagerSheetsScreen} />
