@@ -47,7 +47,9 @@ function makeTabOptions(primaryColor: string) {
       backgroundColor: '#FFFFFF',
       borderTopColor: '#E2E6EA',
       borderTopWidth: 1,
+      height: 80,
       paddingTop: 8,
+      paddingBottom: 16,
     },
     tabBarLabelStyle: { fontSize: 10, letterSpacing: 0.3 },
     tabBarIcon: ({ focused }: { focused: boolean }) => (
